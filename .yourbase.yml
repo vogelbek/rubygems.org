@@ -1,0 +1,73 @@
+dependencies:
+  build:
+    - ruby:2.6.3
+    - node:10.15.1
+
+build_targets:
+  - name: default
+    dependencies:
+      containers:
+        postgres:
+          label: postgres
+          image: postgres:9.6
+          environment:
+            - POSTGRES_PASSWORD=yb
+            - POSTGRES_USER=yb
+            - POSTGRES_DB=yb
+          port_check: 
+            port: 5432
+            timeout: 90
+
+        memcache:
+          label: memcache
+          image: memcached:latest
+          port_check:
+            port: 11211
+            timeout: 10
+
+        elasticsearch:
+          label: elasticsearch 
+          image: docker.elastic.co/elasticsearch/elasticsearch:5.5.3
+          environment:
+            - discovery.type=single-node
+            - xpack.security.enabled=false
+            - http.host=0.0.0.0
+            - transport.host=127.0.0.1
+          port_check:
+            port: 9200
+            timeout: 90
+    environment:
+      - DATABASE_URL=postgres://yb:yb@{{ .Containers.IP "postgres" }}:5432/yb 
+      - DEBIAN_FRONTEND=noninteractive
+      - PGHOST={{ .Containers.IP "postgresql" }}
+      - PGDB=yb
+      - PGPASS=yb
+      - PGUSER=yb
+      - ELASTICSEARCH_HOSTPORT={{ .Containers.IP "elasticsearch" }}:9200
+      - CI=true
+      - SKIPPER_IGNORE=service toxiproxy start;chmod 0600 /root/.netrc
+    commands:
+      - apt -y update
+      - apt -y install memcached toxiproxy
+      - service toxiproxy start
+      - service memcached start
+      - chmod 0600 /root/.netrc
+      - git submodule update --init
+      - gem update --system 
+      - gem --version
+      - gem install bundler-audit -v 0.6.1
+      - gem install brakeman -v 4.3.1
+      - bundle install
+      - bundle audit update
+      - env
+      - cp config/database.yml.example config/database.yml
+      - bundle exec rake db:create db:migrate db:test:prepare
+      - bundle exec rails test
+      - bundle exec rake rubocop
+      - bundle audit check
+        #- brakeman -c config/brakeman.yml -o /dev/stdout
+
+ci:
+  builds:
+    - name: default
+      build_target: default

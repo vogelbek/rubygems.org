@@ -16,8 +16,8 @@ fi
 if which apt-get > /dev/null; then
   echo "Installing toxiproxy-1.2.0.deb"
   wget -O /tmp/toxiproxy-1.2.0.deb https://github.com/Shopify/toxiproxy/releases/download/v1.2.0/toxiproxy_1.2.0_amd64.deb
-  sudo dpkg -i /tmp/toxiproxy-1.2.0.deb
-  sudo service toxiproxy start
+  dpkg -i /tmp/toxiproxy-1.2.0.deb
+  #service toxiproxy start
   exit 0
 fi
 

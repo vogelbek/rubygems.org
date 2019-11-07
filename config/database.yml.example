@@ -15,9 +15,8 @@ development:
 test:
   <<: *default
   database: rubygems_test
-  host: localhost
+  url: <%= ENV['DATABASE_URL'] %>
   min_messages: warning
-  password: testpassword
   pool: 5
   timeout: 5000
 
